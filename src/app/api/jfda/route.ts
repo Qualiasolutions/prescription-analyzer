@@ -34,7 +34,7 @@ async function fetchWithFirecrawl(medicineName: string) {
     throw new Error('Firecrawl API key not configured');
   }
 
-  const response = await fetch('https://api.firecrawl.dev/v1/agent', {
+  const response = await fetch('https://api.firecrawl.dev/v2/agent', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
