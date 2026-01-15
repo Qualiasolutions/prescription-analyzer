@@ -29,6 +29,6 @@ export type Medicine = {
   instructions: string | null;
   warnings: string[] | null;
   interactions: string[] | null;
-  sfda_info: Record<string, unknown> | null;
+  jfda_info: Record<string, unknown> | null;
   category: string | null;
 };

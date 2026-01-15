@@ -17,7 +17,7 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 export const metadata: Metadata = {
   title: "صيدلي AI | Prescription Analyzer",
   description: "AI-powered prescription analysis tool for pharmacies. Extract medicine information, get dosage instructions, and check for drug interactions.",
-  keywords: ["pharmacy", "prescription", "AI", "medicine", "SFDA", "drug interactions", "صيدلية"],
+  keywords: ["pharmacy", "prescription", "AI", "medicine", "JFDA", "drug interactions", "صيدلية"],
 };
 
 export default function RootLayout({

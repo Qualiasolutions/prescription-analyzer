@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import Image from 'next/image';
-import { Medicine, AnalysisResult, SFDAInfo } from '@/types';
+import { Medicine, AnalysisResult, JFDAInfo } from '@/types';
+
+const ACCESS_CODE = '516278';
 
 // Icon Components
 const IconUpload = () => (
@@ -80,15 +82,37 @@ const IconLoader = () => (
 );
 
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
-  const [sfdaInfo, setSfdaInfo] = useState<SFDAInfo | null>(null);
-  const [loadingSfda, setLoadingSfda] = useState(false);
+  const [jfdaInfo, setJfdaInfo] = useState<JFDAInfo | null>(null);
+  const [loadingJfda, setLoadingJfda] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [inputMode, setInputMode] = useState<'image' | 'text'>('image');
+
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('prescription_analyzer_auth');
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+    setIsCheckingAuth(false);
+  }, []);
+
+  const handleCodeSubmit = () => {
+    if (accessCode === ACCESS_CODE) {
+      setIsAuthenticated(true);
+      localStorage.setItem('prescription_analyzer_auth', 'true');
+      toast.success('Access granted');
+    } else {
+      toast.error('Invalid access code');
+      setAccessCode('');
+    }
+  };
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -137,7 +161,7 @@ export default function Home() {
 
     setIsAnalyzing(true);
     setResult(null);
-    setSfdaInfo(null);
+    setJfdaInfo(null);
 
     try {
       let body: { image?: string; text?: string; mimeType?: string } = {};
@@ -179,13 +203,13 @@ export default function Home() {
     }
   };
 
-  const fetchSFDAInfo = async (medicine: Medicine) => {
+  const fetchJFDAInfo = async (medicine: Medicine) => {
     setSelectedMedicine(medicine);
-    setLoadingSfda(true);
-    setSfdaInfo(null);
+    setLoadingJfda(true);
+    setJfdaInfo(null);
 
     try {
-      const response = await fetch('/api/sfda', {
+      const response = await fetch('/api/jfda', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ medicineName: medicine.name_en }),
@@ -193,15 +217,15 @@ export default function Home() {
 
       const data = await response.json();
       if (data.success) {
-        setSfdaInfo(data.sfda_info);
+        setJfdaInfo(data.jfda_info);
       } else {
-        toast.error('Failed to fetch SFDA information');
+        toast.error('Failed to fetch JFDA information');
       }
     } catch (error) {
-      console.error('SFDA fetch error:', error);
-      toast.error('Error fetching SFDA data');
+      console.error('JFDA fetch error:', error);
+      toast.error('Error fetching JFDA data');
     } finally {
-      setLoadingSfda(false);
+      setLoadingJfda(false);
     }
   };
 
@@ -210,9 +234,81 @@ export default function Home() {
     setPreview(null);
     setResult(null);
     setSelectedMedicine(null);
-    setSfdaInfo(null);
+    setJfdaInfo(null);
     setTextInput('');
   };
+
+  // Loading state while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-pattern flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-teal-500 rounded-full" />
+      </div>
+    );
+  }
+
+  // Access code login screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-pattern flex items-center justify-center p-4">
+        <div className="card p-8 max-w-md w-full text-center">
+          <Image
+            src="https://images.squarespace-cdn.com/content/v1/65bf52f873aac538961445c5/19d16cc5-aa83-437c-9c2a-61de5268d5bf/Untitled+design+-+2025-01-19T070746.544.png"
+            alt="Qualia Solutions"
+            width={64}
+            height={64}
+            className="rounded-lg mx-auto mb-6"
+          />
+
+          <h1 className="text-2xl font-bold text-[#0a1628] mb-2">Prescription Analyzer</h1>
+          <p className="text-slate-500 text-sm mb-1">
+            This platform is being developed and designed by
+          </p>
+          <a
+            href="https://qualiasolutions.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-600 font-medium hover:text-teal-700 transition-colors mb-8 inline-block"
+          >
+            Qualia Solutions
+          </a>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-2 text-left">
+                Enter Access Code
+              </label>
+              <input
+                type="text"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
+                placeholder="Enter code"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 text-[#0a1628] placeholder-slate-400 border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none transition-all text-center text-lg tracking-widest"
+                maxLength={6}
+              />
+            </div>
+
+            <button
+              onClick={handleCodeSubmit}
+              disabled={accessCode.length !== 6}
+              className={`w-full py-3 rounded-xl font-semibold transition-all ${
+                accessCode.length === 6
+                  ? 'btn-teal'
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              Access Platform
+            </button>
+          </div>
+
+          <p className="text-slate-400 text-xs mt-8">
+            Contact Qualia Solutions for access credentials
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-pattern">
@@ -236,7 +332,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <span className="badge-teal flex items-center gap-1.5">
                 <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
-                SFDA Connected
+                JFDA Connected
               </span>
             </div>
           </div>
@@ -397,7 +493,7 @@ export default function Home() {
                 {result.medicines.map((medicine, index) => (
                   <div
                     key={index}
-                    onClick={() => fetchSFDAInfo(medicine)}
+                    onClick={() => fetchJFDAInfo(medicine)}
                     className={`p-4 rounded-xl cursor-pointer transition-all border ${
                       selectedMedicine?.name_en === medicine.name_en
                         ? 'border-teal-500 bg-teal-50/50 shadow-sm'
@@ -484,86 +580,148 @@ export default function Home() {
           </div>
         </div>
 
-        {/* SFDA Information Panel */}
-        {(selectedMedicine || loadingSfda) && (
+        {/* JFDA Information Panel */}
+        {(selectedMedicine || loadingJfda) && (
           <div className="mt-8 card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-[#0a1628] font-semibold text-lg flex items-center gap-2">
                 <IconShield />
-                SFDA Information - {selectedMedicine?.name_en}
+                JFDA Information - {selectedMedicine?.name_en}
               </h3>
               <button
-                onClick={() => { setSelectedMedicine(null); setSfdaInfo(null); }}
+                onClick={() => { setSelectedMedicine(null); setJfdaInfo(null); }}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <IconX />
               </button>
             </div>
 
-            {loadingSfda && (
+            {loadingJfda && (
               <div className="text-center py-8">
                 <div className="animate-spin w-8 h-8 border-2 border-slate-200 border-t-teal-500 rounded-full mx-auto mb-4" />
-                <p className="text-slate-500">Fetching SFDA information...</p>
+                <p className="text-slate-500">Fetching JFDA information...</p>
               </div>
             )}
 
-            {sfdaInfo && !loadingSfda && (
+            {jfdaInfo && !loadingJfda && (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Trade Name & Scientific Name */}
+                <div className="p-4 rounded-xl bg-teal-50 border border-teal-200 lg:col-span-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-slate-500 text-sm mb-1">الاسم التجاري / Trade Name</h4>
+                      <p className="text-[#0a1628] font-semibold text-lg">{jfdaInfo.trade_name || selectedMedicine?.name_en}</p>
+                      {jfdaInfo.trade_name_ar && <p className="text-slate-600 text-arabic">{jfdaInfo.trade_name_ar}</p>}
+                    </div>
+                    {jfdaInfo.concentration && (
+                      <span className="badge-teal">{jfdaInfo.concentration}</span>
+                    )}
+                  </div>
+                  {jfdaInfo.scientific_name && (
+                    <div className="mt-3 pt-3 border-t border-teal-200">
+                      <h4 className="text-slate-500 text-xs mb-1">الاسم العلمي / Scientific Name</h4>
+                      <p className="text-slate-700">{jfdaInfo.scientific_name}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* JFDA Status */}
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <h4 className="text-slate-500 text-sm mb-1">SFDA Status</h4>
+                  <h4 className="text-slate-500 text-sm mb-1">JFDA Status</h4>
                   <p className="text-[#0a1628] font-medium flex items-center gap-2">
-                    {sfdaInfo.sfda_status === 'Registered' ? (
+                    {jfdaInfo.jfda_status === 'Registered' ? (
                       <span className="w-2 h-2 bg-emerald-500 rounded-full" />
                     ) : (
                       <span className="w-2 h-2 bg-amber-500 rounded-full" />
                     )}
-                    {sfdaInfo.sfda_status || 'Unknown'}
+                    {jfdaInfo.jfda_status || 'Unknown'}
                   </p>
-                  {sfdaInfo.registration_number && (
-                    <p className="text-slate-400 text-xs mt-1">Reg: {sfdaInfo.registration_number}</p>
+                  {jfdaInfo.registration_number && (
+                    <p className="text-slate-400 text-xs mt-1">الرقم: {jfdaInfo.registration_number}</p>
+                  )}
+                  {jfdaInfo.atc_code && (
+                    <p className="text-slate-400 text-xs mt-1">ATC: {jfdaInfo.atc_code}</p>
                   )}
                 </div>
 
+                {/* Pricing Section */}
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 lg:col-span-2">
+                  <h4 className="text-emerald-700 text-sm mb-3 font-medium">الأسعار / Pricing (JOD)</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    {jfdaInfo.public_price_jod && (
+                      <div>
+                        <p className="text-slate-500 text-xs">سعر الجمهور</p>
+                        <p className="text-emerald-700 font-semibold">{jfdaInfo.public_price_jod} JOD</p>
+                      </div>
+                    )}
+                    {jfdaInfo.pharmacy_price_jod && (
+                      <div>
+                        <p className="text-slate-500 text-xs">سعر الصيدلي</p>
+                        <p className="text-emerald-700 font-semibold">{jfdaInfo.pharmacy_price_jod} JOD</p>
+                      </div>
+                    )}
+                    {jfdaInfo.hospital_price_jod && (
+                      <div>
+                        <p className="text-slate-500 text-xs">سعر المستشفى</p>
+                        <p className="text-emerald-700 font-semibold">{jfdaInfo.hospital_price_jod} JOD</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Prescription Required */}
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
                   <h4 className="text-slate-500 text-sm mb-1">Prescription Required</h4>
                   <p className="text-[#0a1628] font-medium flex items-center gap-2">
-                    {sfdaInfo.prescription_required ? (
+                    {jfdaInfo.prescription_required ? (
                       <>
                         <IconCheck />
-                        Yes
+                        Yes - يحتاج وصفة
                       </>
                     ) : (
-                      'No'
+                      'No - بدون وصفة'
                     )}
                   </p>
                 </div>
 
-                {sfdaInfo.price_range_sar && (
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <h4 className="text-slate-500 text-sm mb-1">Price Range (SAR)</h4>
-                    <p className="text-[#0a1628] font-medium">{sfdaInfo.price_range_sar}</p>
+                {/* Manufacturer Info */}
+                {jfdaInfo.manufacturer && (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 md:col-span-2">
+                    <h4 className="text-slate-500 text-sm mb-2">الشركة الصانعة / Manufacturer</h4>
+                    <p className="text-[#0a1628] font-medium">{jfdaInfo.manufacturer}</p>
+                    {jfdaInfo.manufacturer_country && (
+                      <p className="text-slate-500 text-sm">البلد: {jfdaInfo.manufacturer_country}</p>
+                    )}
+                    {jfdaInfo.marketing_company && (
+                      <p className="text-slate-500 text-sm mt-1">Marketing: {jfdaInfo.marketing_company}</p>
+                    )}
+                    {jfdaInfo.distributor && (
+                      <p className="text-slate-500 text-sm mt-1">الوكيل: {jfdaInfo.distributor}</p>
+                    )}
                   </div>
                 )}
 
-                {sfdaInfo.manufacturer && (
+                {/* Package Info */}
+                {(jfdaInfo.package_size || jfdaInfo.barcode) && (
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <h4 className="text-slate-500 text-sm mb-1">Manufacturer</h4>
-                    <p className="text-[#0a1628] font-medium">{sfdaInfo.manufacturer}</p>
+                    <h4 className="text-slate-500 text-sm mb-1">Package Info</h4>
+                    {jfdaInfo.package_size && <p className="text-slate-600 text-sm">التعبئة: {jfdaInfo.package_size}</p>}
+                    {jfdaInfo.barcode && <p className="text-slate-400 text-xs mt-1">Barcode: {jfdaInfo.barcode}</p>}
                   </div>
                 )}
 
-                {sfdaInfo.storage && (
+                {jfdaInfo.storage && (
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
                     <h4 className="text-slate-500 text-sm mb-1">Storage</h4>
-                    <p className="text-slate-600 text-sm">{sfdaInfo.storage}</p>
+                    <p className="text-slate-600 text-sm">{jfdaInfo.storage}</p>
                   </div>
                 )}
 
-                {sfdaInfo.indications && sfdaInfo.indications.length > 0 && (
+                {jfdaInfo.indications && jfdaInfo.indications.length > 0 && (
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 md:col-span-2">
                     <h4 className="text-slate-500 text-sm mb-2">Approved Indications</h4>
                     <ul className="space-y-1">
-                      {sfdaInfo.indications.map((indication, idx) => (
+                      {jfdaInfo.indications.map((indication, idx) => (
                         <li key={idx} className="text-slate-600 text-sm flex items-center gap-2">
                           <span className="w-1.5 h-1.5 bg-teal-500 rounded-full" />
                           {indication}
@@ -573,28 +731,28 @@ export default function Home() {
                   </div>
                 )}
 
-                {sfdaInfo.contraindications && sfdaInfo.contraindications.length > 0 && (
+                {jfdaInfo.contraindications && jfdaInfo.contraindications.length > 0 && (
                   <div className="p-4 rounded-xl bg-red-50 border border-red-200 md:col-span-2">
                     <h4 className="text-red-700 text-sm mb-2 flex items-center gap-1.5">
                       <IconWarning />
                       Contraindications
                     </h4>
                     <ul className="space-y-1">
-                      {sfdaInfo.contraindications.map((item, idx) => (
+                      {jfdaInfo.contraindications.map((item, idx) => (
                         <li key={idx} className="text-red-600 text-sm">{item}</li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {sfdaInfo.warnings && sfdaInfo.warnings.length > 0 && (
+                {jfdaInfo.warnings && jfdaInfo.warnings.length > 0 && (
                   <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 md:col-span-2 lg:col-span-3">
                     <h4 className="text-amber-700 text-sm mb-2 flex items-center gap-1.5">
                       <IconWarning />
                       Warnings
                     </h4>
                     <ul className="grid md:grid-cols-2 gap-2">
-                      {sfdaInfo.warnings.map((warning, idx) => (
+                      {jfdaInfo.warnings.map((warning, idx) => (
                         <li key={idx} className="text-amber-600 text-sm flex items-start gap-2">
                           <span className="text-amber-500 mt-0.5">•</span>
                           {warning}
@@ -604,11 +762,11 @@ export default function Home() {
                   </div>
                 )}
 
-                {sfdaInfo.generic_alternatives && sfdaInfo.generic_alternatives.length > 0 && (
+                {jfdaInfo.generic_alternatives && jfdaInfo.generic_alternatives.length > 0 && (
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 md:col-span-2 lg:col-span-3">
                     <h4 className="text-slate-500 text-sm mb-2">Generic Alternatives</h4>
                     <div className="flex flex-wrap gap-2">
-                      {sfdaInfo.generic_alternatives.map((alt, idx) => (
+                      {jfdaInfo.generic_alternatives.map((alt, idx) => (
                         <span key={idx} className="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-slate-600 text-sm">
                           {alt}
                         </span>
@@ -617,15 +775,15 @@ export default function Home() {
                   </div>
                 )}
 
-                {sfdaInfo.additional_notes && (
+                {jfdaInfo.additional_notes && (
                   <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 md:col-span-2 lg:col-span-3">
                     <h4 className="text-blue-700 text-sm mb-2 flex items-center gap-1.5">
                       <IconClipboard />
                       Additional Notes
                     </h4>
-                    <p className="text-blue-600 text-sm">{sfdaInfo.additional_notes}</p>
-                    {sfdaInfo.additional_notes_ar && (
-                      <p className="text-blue-500 text-sm mt-2 text-arabic">{sfdaInfo.additional_notes_ar}</p>
+                    <p className="text-blue-600 text-sm">{jfdaInfo.additional_notes}</p>
+                    {jfdaInfo.additional_notes_ar && (
+                      <p className="text-blue-500 text-sm mt-2 text-arabic">{jfdaInfo.additional_notes_ar}</p>
                     )}
                   </div>
                 )}

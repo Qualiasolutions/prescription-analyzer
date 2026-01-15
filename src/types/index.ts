@@ -13,7 +13,7 @@ export interface Medicine {
   interactions?: string[];
   category?: string;
   storage?: string;
-  sfda_notes?: string;
+  jfda_notes?: string;
 }
 
 export interface AnalysisResult {
@@ -36,11 +36,32 @@ export interface AnalysisResponse {
   error?: string;
 }
 
-export interface SFDAInfo {
-  medicine_name: string;
-  medicine_name_ar?: string;
-  sfda_status?: string;
+export interface JFDAInfo {
+  // Trade/Brand name
+  trade_name?: string;
+  trade_name_ar?: string;
+  // Scientific/Generic name
+  scientific_name?: string;
+  scientific_name_ar?: string;
+  // Drug details
+  concentration?: string;
+  jfda_status?: string;
   registration_number?: string;
+  atc_code?: string;
+  // Pricing (JOD)
+  public_price_jod?: string;
+  pharmacy_price_jod?: string;
+  hospital_price_jod?: string;
+  // Package info
+  package_size?: string;
+  barcode?: string;
+  // Manufacturer info
+  manufacturer?: string;
+  manufacturer_country?: string;
+  marketing_company?: string;
+  distributor?: string;
+  // Medical info
+  prescription_required?: boolean;
   indications?: string[];
   indications_ar?: string[];
   contraindications?: string[];
@@ -48,10 +69,7 @@ export interface SFDAInfo {
   warnings?: string[];
   warnings_ar?: string[];
   storage?: string;
-  prescription_required?: boolean;
   generic_alternatives?: string[];
-  price_range_sar?: string;
-  manufacturer?: string;
   additional_notes?: string;
   additional_notes_ar?: string;
 }
