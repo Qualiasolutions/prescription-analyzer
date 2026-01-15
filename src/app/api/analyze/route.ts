@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+// Gemini 3 Pro Preview for both text and vision
+const MODEL = 'google/gemini-3-pro-preview';
+
 const SYSTEM_PROMPT = `You are an expert pharmacist AI assistant specializing in prescription analysis. Your role is to:
 
 1. Extract ALL medicine names from prescriptions (images or text)
@@ -66,7 +69,6 @@ export async function POST(request: NextRequest) {
     ];
 
     if (image) {
-      // Image analysis with vision model
       messages.push({
         role: 'user',
         content: [
@@ -83,7 +85,6 @@ export async function POST(request: NextRequest) {
         ],
       });
     } else {
-      // Text analysis
       messages.push({
         role: 'user',
         content: `Please analyze this prescription text and extract all medicine information. Provide detailed instructions for each medication, potential interactions, and any warnings. Include both Arabic and English translations.\n\nPrescription text:\n${text}`,
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
         'X-Title': 'Prescription Analyzer',
       },
       body: JSON.stringify({
-        model: image ? 'anthropic/claude-sonnet-4' : 'anthropic/claude-sonnet-4',
+        model: MODEL,
         messages,
         max_tokens: 4096,
         temperature: 0.3,
@@ -134,7 +135,6 @@ export async function POST(request: NextRequest) {
     try {
       analysis = JSON.parse(content);
     } catch {
-      // If not valid JSON, wrap the response
       analysis = {
         medicines: [],
         general_notes: content,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const MODEL = 'google/gemini-3-pro-preview';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use AI to search for SFDA information and provide context
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         'X-Title': 'Prescription Analyzer - SFDA Lookup',
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-sonnet-4',
+        model: MODEL,
         messages: [
           {
             role: 'system',
