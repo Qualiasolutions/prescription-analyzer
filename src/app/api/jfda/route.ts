@@ -95,7 +95,7 @@ Be accurate with Jordanian drug prices and distributors. If unsure about exact p
               content: `Provide complete JFDA pharmaceutical information for: ${medicineName}`
             }
           ],
-          max_tokens: 2048,
+          max_tokens: 4096,
           temperature: 0.3,
           response_format: { type: 'json_object' },
         }),
