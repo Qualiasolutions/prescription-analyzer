@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-
-// Gemini 3 Pro Preview for both text and vision
 const MODEL = 'google/gemini-3-pro-preview';
+const REQUEST_TIMEOUT_MS = 60000; // 60 seconds
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+// Request validation schema
+const analyzeRequestSchema = z.object({
+  image: z.string().max(MAX_IMAGE_SIZE_BYTES).optional(),
+  text: z.string().max(10000).optional(),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']).optional(),
+}).refine(data => data.image || data.text, {
+  message: 'Either image or text must be provided',
+});
 
 const SYSTEM_PROMPT = `You are an expert pharmacist AI assistant specializing in prescription analysis. Your role is to:
 
@@ -11,7 +21,7 @@ const SYSTEM_PROMPT = `You are an expert pharmacist AI assistant specializing in
 2. Provide accurate Arabic and English names for each medicine
 3. Give detailed dosage instructions and timing
 4. Identify potential drug interactions and warnings
-5. Reference JFDA (Jordan Food and Drug Administration - http://jfda.jo/) guidelines when relevant
+5. Reference JFDA (Jordan Food and Drug Administration) guidelines when relevant
 6. Provide patient-friendly explanations in both Arabic and English
 
 IMPORTANT GUIDELINES:
@@ -38,10 +48,9 @@ Respond in JSON format with this structure:
       "instructions_ar": "تناوله مع الطعام بعد الإفطار والعشاء",
       "warnings": ["Do not take with alcohol", "May cause drowsiness"],
       "warnings_ar": ["لا تتناوله مع الكحول", "قد يسبب النعاس"],
-      "interactions": ["Avoid taking with antacids", "May interact with blood thinners"],
+      "interactions": ["Avoid taking with antacids"],
       "category": "Antibiotic",
-      "storage": "Store at room temperature",
-      "jfda_notes": "JFDA approved, registration number: XXX"
+      "storage": "Store at room temperature"
     }
   ],
   "general_notes": "General prescription notes",
@@ -51,21 +60,30 @@ Respond in JSON format with this structure:
 }`;
 
 export async function POST(request: NextRequest) {
-  try {
-    const { image, text, mimeType } = await request.json();
+  // Check API key early
+  if (!OPENROUTER_API_KEY) {
+    return NextResponse.json(
+      { error: 'Service temporarily unavailable' },
+      { status: 503 }
+    );
+  }
 
-    if (!image && !text) {
+  try {
+    const body = await request.json();
+
+    // Validate request
+    const parseResult = analyzeRequestSchema.safeParse(body);
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Please provide either an image or text to analyze' },
+        { error: 'Invalid request', details: parseResult.error.issues.map(i => i.message) },
         { status: 400 }
       );
     }
 
+    const { image, text, mimeType } = parseResult.data;
+
     const messages: { role: string; content: unknown }[] = [
-      {
-        role: 'system',
-        content: SYSTEM_PROMPT,
-      },
+      { role: 'system', content: SYSTEM_PROMPT },
     ];
 
     if (image) {
@@ -85,76 +103,93 @@ export async function POST(request: NextRequest) {
         ],
       });
     } else {
+      // Sanitize text input to prevent prompt injection
+      const sanitizedText = text!.replace(/[<>{}]/g, '');
       messages.push({
         role: 'user',
-        content: `Please analyze this prescription text and extract all medicine information. Provide detailed instructions for each medication, potential interactions, and any warnings. Include both Arabic and English translations.\n\nPrescription text:\n${text}`,
+        content: `Please analyze this prescription text and extract all medicine information. Provide detailed instructions for each medication, potential interactions, and any warnings. Include both Arabic and English translations.\n\nPrescription text:\n${sanitizedText}`,
       });
     }
 
     const startTime = Date.now();
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://prescription-analyzer.vercel.app',
-        'X-Title': 'Prescription Analyzer',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages,
-        max_tokens: 4096,
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-      }),
-    });
+    // Add timeout with AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    const responseTime = Date.now() - startTime;
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenRouter API error:', errorData);
-      return NextResponse.json(
-        { error: 'Failed to analyze prescription', details: errorData },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      return NextResponse.json(
-        { error: 'No analysis result received' },
-        { status: 500 }
-      );
-    }
-
-    let analysis;
     try {
-      analysis = JSON.parse(content);
-    } catch {
-      analysis = {
-        medicines: [],
-        general_notes: content,
-        raw_response: content,
-      };
-    }
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://prescription-analyzer.vercel.app',
+          'X-Title': 'Prescription Analyzer',
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages,
+          max_tokens: 4096,
+          temperature: 0.3,
+          response_format: { type: 'json_object' },
+        }),
+        signal: controller.signal,
+      });
 
-    return NextResponse.json({
-      success: true,
-      analysis,
-      metadata: {
-        model: data.model,
-        tokens: data.usage?.total_tokens,
-        response_time_ms: responseTime,
-      },
-    });
+      clearTimeout(timeoutId);
+      const responseTime = Date.now() - startTime;
+
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: 'Failed to analyze prescription' },
+          { status: response.status === 401 ? 503 : 500 }
+        );
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        return NextResponse.json(
+          { error: 'No analysis result received' },
+          { status: 500 }
+        );
+      }
+
+      let analysis;
+      try {
+        analysis = JSON.parse(content);
+      } catch {
+        analysis = {
+          medicines: [],
+          general_notes: content,
+          raw_response: content,
+        };
+      }
+
+      return NextResponse.json({
+        success: true,
+        analysis,
+        metadata: {
+          model: data.model,
+          tokens: data.usage?.total_tokens,
+          response_time_ms: responseTime,
+        },
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'Request timeout - please try again' },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
+    }
   } catch (error) {
-    console.error('Analysis error:', error);
+    // Don't expose internal error details
     return NextResponse.json(
-      { error: 'Internal server error', details: String(error) },
+      { error: 'An error occurred while processing your request' },
       { status: 500 }
     );
   }

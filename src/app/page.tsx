@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { Medicine, AnalysisResult, JFDAInfo } from '@/types';
 
-const ACCESS_CODE = '516278';
+const ACCESS_CODE = process.env.NEXT_PUBLIC_ACCESS_CODE || '';
 
 // Icon Components
 const IconUpload = () => (
@@ -195,8 +195,7 @@ export default function Home() {
       } else {
         toast.error(data.error || 'Failed to analyze prescription');
       }
-    } catch (error) {
-      console.error('Analysis error:', error);
+    } catch {
       toast.error('An error occurred during analysis');
     } finally {
       setIsAnalyzing(false);
@@ -221,8 +220,7 @@ export default function Home() {
       } else {
         toast.error('Failed to fetch JFDA information');
       }
-    } catch (error) {
-      console.error('JFDA fetch error:', error);
+    } catch {
       toast.error('Error fetching JFDA data');
     } finally {
       setLoadingJfda(false);

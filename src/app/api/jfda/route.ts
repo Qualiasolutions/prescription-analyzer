@@ -1,40 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = 'google/gemini-3-pro-preview';
+const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
+
+// Request validation schema
+const jfdaRequestSchema = z.object({
+  medicineName: z.string().min(1).max(200).transform(val =>
+    // Sanitize to prevent prompt injection
+    val.replace(/[<>{}[\]]/g, '').trim()
+  ),
+});
 
 export async function POST(request: NextRequest) {
-  try {
-    const { medicineName } = await request.json();
+  // Check API key early
+  if (!OPENROUTER_API_KEY) {
+    return NextResponse.json(
+      { error: 'Service temporarily unavailable' },
+      { status: 503 }
+    );
+  }
 
-    if (!medicineName) {
+  try {
+    const body = await request.json();
+
+    // Validate request
+    const parseResult = jfdaRequestSchema.safeParse(body);
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Medicine name is required' },
+        { error: 'Invalid medicine name' },
         { status: 400 }
       );
     }
 
-    if (!OPENROUTER_API_KEY) {
-      return NextResponse.json(
-        { error: 'API key not configured' },
-        { status: 500 }
-      );
-    }
+    const { medicineName } = parseResult.data;
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://prescription-analyzer.vercel.app',
-        'X-Title': 'Prescription Analyzer - JFDA Lookup',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a pharmaceutical database expert specializing in Jordan's JFDA (Jordan Food and Drug Administration) drug registry.
+    // Add timeout with AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://prescription-analyzer.vercel.app',
+          'X-Title': 'Prescription Analyzer - JFDA Lookup',
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: `You are a pharmaceutical database expert specializing in Jordan's JFDA (Jordan Food and Drug Administration) drug registry.
 
 Your task is to provide accurate pharmaceutical information for drugs registered in Jordan. Use your knowledge of:
 - JFDA drug pricing (سعر الجمهور، سعر الصيدلي، سعر المستشفى)
@@ -69,47 +89,59 @@ Respond ONLY with valid JSON in this exact format:
 }
 
 Be accurate with Jordanian drug prices and distributors. If unsure about exact prices, provide reasonable estimates based on typical Jordanian market prices.`
-          },
-          {
-            role: 'user',
-            content: `Provide complete JFDA pharmaceutical information for: ${medicineName}`
-          }
-        ],
-        max_tokens: 2048,
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-      }),
-    });
+            },
+            {
+              role: 'user',
+              content: `Provide complete JFDA pharmaceutical information for: ${medicineName}`
+            }
+          ],
+          max_tokens: 2048,
+          temperature: 0.3,
+          response_format: { type: 'json_object' },
+        }),
+        signal: controller.signal,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenRouter API error:', errorData);
-      return NextResponse.json(
-        { error: 'Failed to fetch JFDA information', details: errorData },
-        { status: response.status }
-      );
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: 'Failed to fetch JFDA information' },
+          { status: response.status === 401 ? 503 : 500 }
+        );
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+
+      let jfdaInfo;
+      try {
+        jfdaInfo = JSON.parse(content);
+      } catch {
+        return NextResponse.json(
+          { error: 'Failed to parse drug information' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        jfda_info: jfdaInfo,
+        data_source: 'ai',
+      });
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'Request timeout - please try again' },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
     }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    let jfdaInfo;
-    try {
-      jfdaInfo = JSON.parse(content);
-    } catch {
-      console.error('Failed to parse AI response:', content);
-      jfdaInfo = { error: 'Failed to parse response', raw: content };
-    }
-
-    return NextResponse.json({
-      success: true,
-      jfda_info: jfdaInfo,
-      data_source: 'ai',
-    });
-  } catch (error) {
-    console.error('JFDA lookup error:', error);
+  } catch {
     return NextResponse.json(
-      { error: 'Internal server error', details: String(error) },
+      { error: 'An error occurred while processing your request' },
       { status: 500 }
     );
   }
