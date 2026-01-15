@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
+      let content = data.choices?.[0]?.message?.content;
 
       if (!content) {
         return NextResponse.json(
@@ -155,6 +155,9 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+
+      // Strip markdown code blocks if present
+      content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 
       let analysis;
       try {

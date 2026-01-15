@@ -112,7 +112,17 @@ Be accurate with Jordanian drug prices and distributors. If unsure about exact p
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
+      let content = data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        return NextResponse.json(
+          { error: 'No response from AI service' },
+          { status: 500 }
+        );
+      }
+
+      // Strip markdown code blocks if present
+      content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
 
       let jfdaInfo;
       try {
