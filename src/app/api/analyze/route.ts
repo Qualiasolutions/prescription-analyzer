@@ -156,18 +156,39 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Strip markdown code blocks if present
-      content = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+      // Strip markdown code blocks and extract JSON
+      content = content
+        .replace(/^[\s\S]*?```(?:json)?\s*\n?/i, '')  // Remove everything up to and including opening ```
+        .replace(/\n?```[\s\S]*$/i, '')               // Remove closing ``` and everything after
+        .trim();
+
+      // If no code blocks, try to extract JSON object directly
+      if (!content.startsWith('{')) {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          content = jsonMatch[0];
+        }
+      }
 
       let analysis;
       try {
         analysis = JSON.parse(content);
-      } catch {
-        analysis = {
-          medicines: [],
-          general_notes: content,
-          raw_response: content,
-        };
+      } catch (parseError) {
+        // Try to fix common JSON issues
+        try {
+          // Remove trailing commas before } or ]
+          const fixedContent = content
+            .replace(/,(\s*[}\]])/g, '$1')
+            .replace(/[\x00-\x1F\x7F]/g, ''); // Remove control characters
+          analysis = JSON.parse(fixedContent);
+        } catch {
+          console.error('JSON parse failed:', parseError, 'Content:', content.substring(0, 500));
+          analysis = {
+            medicines: [],
+            general_notes: content,
+            raw_response: content,
+          };
+        }
       }
 
       return NextResponse.json({
