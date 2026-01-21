@@ -7,6 +7,7 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMITS: Record<string, { requests: number; windowMs: number }> = {
   '/api/analyze': { requests: 10, windowMs: 60000 }, // 10 req/min
   '/api/jfda': { requests: 20, windowMs: 60000 },    // 20 req/min
+  '/api/whatsapp': { requests: 30, windowMs: 60000 }, // 30 req/min for chat
 };
 
 function getClientIP(request: NextRequest): string {

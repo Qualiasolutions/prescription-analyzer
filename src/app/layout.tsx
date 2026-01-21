@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-const inter = Inter({
-  variable: "--font-inter",
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -15,9 +20,9 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: "صيدلي AI | Prescription Analyzer",
-  description: "AI-powered prescription analysis tool for pharmacies. Extract medicine information, get dosage instructions, and check for drug interactions.",
-  keywords: ["pharmacy", "prescription", "AI", "medicine", "JFDA", "drug interactions", "صيدلية"],
+  title: "Prescription Analyzer | Qualia Solutions",
+  description: "AI-powered prescription analysis. Extract medicine information, dosage instructions, and JFDA verification.",
+  keywords: ["pharmacy", "prescription", "AI", "medicine", "JFDA", "Jordan", "صيدلية"],
 };
 
 export default function RootLayout({
@@ -26,16 +31,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="ltr">
-      <body className={`${inter.variable} ${ibmPlexArabic.variable} antialiased`}>
+    <html lang="en" dir="ltr">
+      <body className={`${geist.variable} ${geistMono.variable} ${ibmPlexArabic.variable} antialiased`}>
         {children}
         <Toaster
           position="top-center"
-          richColors
-          closeButton
           toastOptions={{
             style: {
-              fontFamily: 'var(--font-inter)',
+              fontFamily: 'var(--font-geist)',
+              fontSize: '14px',
             },
           }}
         />
