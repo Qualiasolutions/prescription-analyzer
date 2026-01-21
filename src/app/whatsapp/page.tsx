@@ -68,7 +68,7 @@ export default function WhatsAppAgent() {
     {
       id: '1',
       role: 'assistant',
-      content: 'أهلاً وسهلاً بصيدلية كواليا! 👋\n\nكيف بقدر أساعدك اليوم؟\n\nWelcome to Qualia Pharmacy!\nHow can I help you today?\n\n💊 اسأل عن أي دواء\n💰 استفسر عن الأسعار\n⚠️ تحقق من التعارضات الدوائية',
+      content: 'أهلاً بك في صيدلية كواليا.\nWelcome to Qualia Pharmacy.\n\nكيف يمكنني مساعدتك؟\nHow can I help you?\n\n- استفسارات عن الأدوية والأسعار\n- معلومات JFDA\n- التحقق من التعارضات الدوائية\n\n- Medication and pricing inquiries\n- JFDA information\n- Drug interaction checks',
       timestamp: new Date(),
     },
   ]);
