@@ -5,6 +5,19 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const MODEL = 'google/gemini-3-pro-preview';
 const REQUEST_TIMEOUT_MS = 30000;
 
+// Strip markdown formatting from response
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')  // **bold** -> bold
+    .replace(/\*([^*]+)\*/g, '$1')       // *italic* -> italic
+    .replace(/__([^_]+)__/g, '$1')       // __bold__ -> bold
+    .replace(/_([^_]+)_/g, '$1')         // _italic_ -> italic
+    .replace(/^#{1,6}\s+/gm, '')         // # headers -> plain text
+    .replace(/`([^`]+)`/g, '$1')         // `code` -> code
+    .replace(/```[\s\S]*?```/g, '')      // code blocks -> remove
+    .trim();
+}
+
 const whatsappRequestSchema = z.object({
   message: z.string().min(1).max(1000).transform(val =>
     val.replace(/[<>{}[\]]/g, '').trim()
@@ -51,16 +64,19 @@ CORE RESPONSIBILITIES:
 STRICT RULES:
 - Respond in BOTH Arabic and English (bilingual)
 - NO emojis - keep responses professional and clean
+- NO markdown formatting - no asterisks, no bold, no headers, just plain text
 - Be helpful but professional
 - For serious medical conditions, advise seeing a doctor
 - Do not diagnose - only provide medication information
 - Prices are approximate and may vary
+- Always complete your response - never cut off mid-sentence
 
 RESPONSE FORMAT:
-- Keep responses concise and scannable
-- Use line breaks and bullet points for structure
+- Keep responses concise but COMPLETE
+- Use line breaks and dashes (-) for lists
 - Always include price in JOD when mentioning any medication
 - End with a follow-up question or offer to help
+- Plain text only - no special formatting
 
 EXAMPLE RESPONSE:
 "نعم، باندول متوفر.
@@ -120,8 +136,8 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           model: MODEL,
           messages,
-          max_tokens: 1024,
-          temperature: 0.7,
+          max_tokens: 2048,
+          temperature: 0.6,
         }),
         signal: controller.signal,
       });
@@ -138,14 +154,17 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
+      const rawContent = data.choices?.[0]?.message?.content;
 
-      if (!content) {
+      if (!rawContent) {
         return NextResponse.json(
           { error: 'No response generated' },
           { status: 500 }
         );
       }
+
+      // Clean the response - strip any markdown formatting
+      const content = stripMarkdown(rawContent);
 
       return NextResponse.json({
         success: true,
