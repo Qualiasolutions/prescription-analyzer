@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = 'google/gemini-3-pro-preview';
+const MODEL = 'google/gemini-3-flash-preview';
 const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
 
 // Request validation schema
