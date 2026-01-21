@@ -129,8 +129,10 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenRouter API error:', response.status, errorText);
         return NextResponse.json(
-          { error: 'Failed to get response' },
+          { error: `AI service error: ${response.status}` },
           { status: 500 }
         );
       }
@@ -159,7 +161,8 @@ export async function POST(request: NextRequest) {
       }
       throw fetchError;
     }
-  } catch {
+  } catch (error) {
+    console.error('WhatsApp API error:', error);
     return NextResponse.json(
       { error: 'An error occurred' },
       { status: 500 }

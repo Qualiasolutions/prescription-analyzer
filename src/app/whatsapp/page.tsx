@@ -63,15 +63,21 @@ const QUICK_MESSAGES = [
   { ar: 'بدي دواء للرشح', en: 'I need cold medicine' },
 ];
 
+const WELCOME_MESSAGE = 'أهلاً بك في صيدلية كواليا.\nWelcome to Qualia Pharmacy.\n\nكيف يمكنني مساعدتك؟\nHow can I help you?\n\n- استفسارات عن الأدوية والأسعار\n- معلومات JFDA\n- التحقق من التعارضات الدوائية\n\n- Medication and pricing inquiries\n- JFDA information\n- Drug interaction checks';
+
 export default function WhatsAppAgent() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+    setMessages([{
       id: '1',
       role: 'assistant',
-      content: 'أهلاً بك في صيدلية كواليا.\nWelcome to Qualia Pharmacy.\n\nكيف يمكنني مساعدتك؟\nHow can I help you?\n\n- استفسارات عن الأدوية والأسعار\n- معلومات JFDA\n- التحقق من التعارضات الدوائية\n\n- Medication and pricing inquiries\n- JFDA information\n- Drug interaction checks',
+      content: WELCOME_MESSAGE,
       timestamp: new Date(),
-    },
-  ]);
+    }]);
+  }, []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -186,6 +192,14 @@ export default function WhatsAppAgent() {
             Today
           </span>
         </div>
+
+        {!isHydrated && (
+          <div className="flex justify-start">
+            <div className="bg-[#202c33] rounded-lg rounded-tl-none px-2">
+              <IconLoader />
+            </div>
+          </div>
+        )}
 
         {messages.map((message) => (
           <div
