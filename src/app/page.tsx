@@ -65,6 +65,11 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
     </svg>
   ),
+  refresh: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+    </svg>
+  ),
 };
 
 function Spinner({ className = 'w-5 h-5' }: { className?: string }) {
@@ -152,6 +157,7 @@ export default function Home() {
     setIsAnalyzing(true);
     setResult(null);
     setJfdaInfo(null);
+    setSelectedMedicine(null);
 
     try {
       let body: { image?: string; text?: string; mimeType?: string } = {};
@@ -248,7 +254,7 @@ export default function Home() {
               height={48}
               className="rounded-xl mx-auto mb-6"
             />
-            <h1 className="text-xl font-semibold text-[#171717] mb-1">Prescription Analyzer</h1>
+            <h1 className="text-xl font-semibold text-[#171717] mb-1">صيدلية كواليا | Qualia Pharmacy</h1>
             <p className="text-sm text-[#737373]">
               Built by{' '}
               <a
@@ -298,7 +304,7 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="border-b border-[#e5e5e5] bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
               src="https://images.squarespace-cdn.com/content/v1/65bf52f873aac538961445c5/19d16cc5-aa83-437c-9c2a-61de5268d5bf/Untitled+design+-+2025-01-19T070746.544.png"
@@ -307,9 +313,9 @@ export default function Home() {
               height={32}
               className="rounded-lg"
             />
-            <span className="font-medium text-[#171717]">صيدلية كواليا | Qualia Pharmacy</span>
+            <span className="font-medium text-[#171717] hidden sm:inline">صيدلية كواليا | Qualia Pharmacy</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link
               href="/whatsapp"
               className="flex items-center gap-2 px-3 py-1.5 bg-[#25D366] text-white text-sm font-medium rounded-lg hover:bg-[#20bd5a] transition-colors"
@@ -317,237 +323,248 @@ export default function Home() {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
               </svg>
-              WhatsApp Agent
+              <span className="hidden sm:inline">WhatsApp</span>
             </Link>
             <div className="flex items-center gap-2 text-xs text-[#737373]">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-              JFDA Connected
+              <span className="hidden sm:inline">JFDA</span>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Hero - only show when no results */}
-        {!result && (
-          <div className="text-center mb-10 animate-fade-in">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-[#171717] mb-2">
-              AI Prescription Analysis
-            </h1>
-            <p className="text-[#737373] max-w-lg mx-auto">
-              Upload a prescription or enter medicine names for detailed information, dosage instructions, and JFDA verification.
-            </p>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+        {/* Upload Section - Centered when no results */}
+        {!result && !isAnalyzing && (
+          <div className="max-w-xl mx-auto animate-fade-in">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-[#171717] mb-2">
+                AI Prescription Analysis
+              </h1>
+              <p className="text-[#737373]">
+                Upload a prescription or enter medicine names for detailed information and JFDA verification.
+              </p>
+            </div>
+
+            <div className="card p-6">
+              {/* Mode Toggle */}
+              <div className="flex gap-1 p-1 bg-[#f5f5f5] rounded-lg mb-5 w-fit mx-auto">
+                <button
+                  onClick={() => setInputMode('image')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    inputMode === 'image'
+                      ? 'bg-white text-[#171717] shadow-sm'
+                      : 'text-[#737373] hover:text-[#171717]'
+                  }`}
+                >
+                  {Icons.upload}
+                  Image
+                </button>
+                <button
+                  onClick={() => setInputMode('text')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    inputMode === 'text'
+                      ? 'bg-white text-[#171717] shadow-sm'
+                      : 'text-[#737373] hover:text-[#171717]'
+                  }`}
+                >
+                  {Icons.text}
+                  Text
+                </button>
+              </div>
+
+              {inputMode === 'image' ? (
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  className={`upload-zone p-10 text-center cursor-pointer ${preview ? 'active' : ''}`}
+                  onClick={() => document.getElementById('file-input')?.click()}
+                >
+                  <input
+                    id="file-input"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleFileChange}
+                  />
+                  {preview ? (
+                    <div className="space-y-3">
+                      <img
+                        src={preview}
+                        alt="Preview"
+                        className="max-h-48 mx-auto rounded-lg"
+                      />
+                      <p className="text-sm text-[#737373]">{file?.name}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="w-16 h-16 mx-auto rounded-xl bg-[#f5f5f5] flex items-center justify-center text-[#a3a3a3]">
+                        {Icons.image}
+                      </div>
+                      <div>
+                        <p className="text-[#171717] font-medium">
+                          Drop prescription here
+                        </p>
+                        <p className="text-sm text-[#a3a3a3] mt-0.5">
+                          or click to browse
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <textarea
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Enter medicine names or prescription details..."
+                  className="w-full h-[200px] p-4 rounded-lg bg-white text-[#171717] border border-[#e5e5e5] focus:border-[#171717] focus:outline-none resize-none text-sm"
+                />
+              )}
+
+              <button
+                onClick={analyzeImage}
+                disabled={inputMode === 'image' ? !file : !textInput.trim()}
+                className="w-full mt-5 flex items-center justify-center gap-2 py-3.5 rounded-lg btn-primary"
+              >
+                {Icons.search}
+                Analyze Prescription
+              </button>
+            </div>
           </div>
         )}
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Input Section */}
-          <div className="card p-5 animate-fade-in">
-            {/* Mode Toggle */}
-            <div className="flex gap-1 p-1 bg-[#f5f5f5] rounded-lg mb-5 w-fit">
-              <button
-                onClick={() => setInputMode('image')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  inputMode === 'image'
-                    ? 'bg-white text-[#171717] shadow-sm'
-                    : 'text-[#737373] hover:text-[#171717]'
-                }`}
-              >
-                {Icons.upload}
-                Image
-              </button>
-              <button
-                onClick={() => setInputMode('text')}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  inputMode === 'text'
-                    ? 'bg-white text-[#171717] shadow-sm'
-                    : 'text-[#737373] hover:text-[#171717]'
-                }`}
-              >
-                {Icons.text}
-                Text
-              </button>
-            </div>
-
-            {inputMode === 'image' ? (
-              <div
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                className={`upload-zone p-8 text-center cursor-pointer min-h-[240px] flex flex-col items-center justify-center ${preview ? 'active' : ''}`}
-                onClick={() => document.getElementById('file-input')?.click()}
-              >
-                <input
-                  id="file-input"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleFileChange}
-                />
-                {preview ? (
-                  <div className="space-y-3">
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="max-h-40 mx-auto rounded-lg"
-                    />
-                    <p className="text-sm text-[#737373]">{file?.name}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="w-14 h-14 mx-auto rounded-xl bg-[#f5f5f5] flex items-center justify-center text-[#a3a3a3]">
-                      {Icons.image}
-                    </div>
-                    <div>
-                      <p className="text-[#171717] font-medium">
-                        Drop prescription here
-                      </p>
-                      <p className="text-sm text-[#a3a3a3] mt-0.5">
-                        or click to browse
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <textarea
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                placeholder="Enter medicine names or prescription details..."
-                className="w-full h-[240px] p-4 rounded-lg bg-white text-[#171717] border border-[#e5e5e5] focus:border-[#171717] focus:outline-none resize-none text-sm"
-              />
-            )}
-
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={analyzeImage}
-                disabled={isAnalyzing || (inputMode === 'image' ? !file : !textInput.trim())}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg btn-primary text-sm"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Spinner className="w-4 h-4" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    {Icons.search}
-                    Analyze
-                  </>
-                )}
-              </button>
-              {(file || textInput) && (
-                <button
-                  onClick={resetAnalysis}
-                  className="px-4 py-3 rounded-lg btn-secondary text-sm"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+        {/* Analyzing State */}
+        {isAnalyzing && (
+          <div className="max-w-xl mx-auto text-center py-20 animate-fade-in">
+            <Spinner className="w-10 h-10 mx-auto mb-4" />
+            <p className="text-[#171717] font-medium">Analyzing prescription...</p>
+            <p className="text-sm text-[#737373] mt-1">This may take a few seconds</p>
           </div>
+        )}
 
-          {/* Results Section */}
-          <div className="card p-5 animate-fade-in" style={{ animationDelay: '50ms' }}>
-            <h2 className="text-sm font-medium text-[#171717] mb-4 flex items-center gap-2">
-              {Icons.pill}
-              Results
-            </h2>
-
-            {!result && !isAnalyzing && (
-              <div className="text-center py-16">
-                <div className="w-12 h-12 mx-auto rounded-lg bg-[#f5f5f5] flex items-center justify-center mb-3 text-[#d4d4d4]">
-                  {Icons.pill}
-                </div>
-                <p className="text-sm text-[#a3a3a3]">
-                  Results will appear here
+        {/* Results */}
+        {result && result.medicines && (
+          <div className="animate-fade-in">
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-[#171717]">Analysis Results</h2>
+                <p className="text-sm text-[#737373] mt-0.5">
+                  {result.medicines.length} medicine{result.medicines.length !== 1 ? 's' : ''} found • Click for JFDA details
                 </p>
               </div>
-            )}
+              <button
+                onClick={resetAnalysis}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg btn-secondary text-sm"
+              >
+                {Icons.refresh}
+                New Analysis
+              </button>
+            </div>
 
-            {isAnalyzing && (
-              <div className="text-center py-16">
-                <Spinner className="w-8 h-8 mx-auto mb-3" />
-                <p className="text-sm text-[#737373]">Analyzing prescription...</p>
-              </div>
-            )}
-
-            {result && result.medicines && (
-              <div className="space-y-2 max-h-[480px] overflow-y-auto stagger-children">
-                {result.medicines.map((medicine, index) => (
-                  <div
-                    key={index}
-                    onClick={() => fetchJFDAInfo(medicine)}
-                    className={`p-4 rounded-lg cursor-pointer transition-all border ${
-                      selectedMedicine?.name_en === medicine.name_en
-                        ? 'border-[#171717] bg-[#fafafa]'
-                        : 'border-[#e5e5e5] hover:border-[#d4d4d4] hover:bg-[#fafafa]'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-[#171717] truncate">{medicine.name_en}</h3>
-                        {medicine.name_ar && (
-                          <p className="text-sm text-[#737373] text-arabic mt-0.5">{medicine.name_ar}</p>
-                        )}
-                      </div>
-                      {medicine.category && (
-                        <span className="badge shrink-0">{medicine.category}</span>
+            {/* Medicines Grid */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+              {result.medicines.map((medicine, index) => (
+                <div
+                  key={index}
+                  onClick={() => fetchJFDAInfo(medicine)}
+                  className={`card p-5 cursor-pointer transition-all ${
+                    selectedMedicine?.name_en === medicine.name_en
+                      ? 'ring-2 ring-[#171717] ring-offset-2'
+                      : 'hover:border-[#d4d4d4]'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-[#171717] truncate">{medicine.name_en}</h3>
+                      {medicine.name_ar && (
+                        <p className="text-sm text-[#737373] text-arabic truncate">{medicine.name_ar}</p>
                       )}
                     </div>
-
-                    {(medicine.dosage || medicine.frequency || medicine.duration) && (
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-[#737373]">
-                        {medicine.dosage && <span>{medicine.dosage}</span>}
-                        {medicine.frequency && <span>{medicine.frequency}</span>}
-                        {medicine.duration && <span>{medicine.duration}</span>}
-                      </div>
-                    )}
-
-                    {medicine.instructions && (
-                      <p className="text-xs text-[#737373] mt-3 p-2 bg-[#f5f5f5] rounded">
-                        {medicine.instructions}
-                      </p>
-                    )}
-
-                    {medicine.warnings && medicine.warnings.length > 0 && (
-                      <div className="mt-3 space-y-1">
-                        {medicine.warnings.slice(0, 2).map((warning, idx) => (
-                          <p key={idx} className="text-xs text-amber-600 flex items-center gap-1.5">
-                            {Icons.warning}
-                            {warning}
-                          </p>
-                        ))}
-                      </div>
+                    {medicine.category && (
+                      <span className="badge shrink-0 text-[10px]">{medicine.category}</span>
                     )}
                   </div>
-                ))}
 
+                  {(medicine.dosage || medicine.frequency || medicine.duration) && (
+                    <div className="space-y-1.5 text-xs text-[#737373] mb-3">
+                      {medicine.dosage && (
+                        <div className="flex justify-between">
+                          <span className="text-[#a3a3a3]">Dosage</span>
+                          <span className="font-medium text-[#171717]">{medicine.dosage}</span>
+                        </div>
+                      )}
+                      {medicine.frequency && (
+                        <div className="flex justify-between">
+                          <span className="text-[#a3a3a3]">Frequency</span>
+                          <span className="font-medium text-[#171717]">{medicine.frequency}</span>
+                        </div>
+                      )}
+                      {medicine.duration && (
+                        <div className="flex justify-between">
+                          <span className="text-[#a3a3a3]">Duration</span>
+                          <span className="font-medium text-[#171717]">{medicine.duration}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {medicine.instructions && (
+                    <p className="text-xs text-[#737373] p-2.5 bg-[#f5f5f5] rounded-lg mb-3 line-clamp-2">
+                      {medicine.instructions}
+                    </p>
+                  )}
+
+                  {medicine.warnings && medicine.warnings.length > 0 && (
+                    <div className="space-y-1">
+                      {medicine.warnings.slice(0, 2).map((warning, idx) => (
+                        <p key={idx} className="text-xs text-amber-600 flex items-start gap-1.5">
+                          <span className="mt-0.5 shrink-0">{Icons.warning}</span>
+                          <span className="line-clamp-1">{warning}</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* General Notes & Advice */}
+            {(result.general_notes || result.patient_advice) && (
+              <div className="grid sm:grid-cols-2 gap-4 mt-6">
                 {result.general_notes && (
-                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-                    <p className="text-xs text-blue-700">{result.general_notes}</p>
+                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                    <h4 className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                      {Icons.info}
+                      General Notes
+                    </h4>
+                    <p className="text-sm text-blue-700">{result.general_notes}</p>
                     {result.general_notes_ar && (
-                      <p className="text-xs text-blue-600 mt-1 text-arabic">{result.general_notes_ar}</p>
+                      <p className="text-sm text-blue-600 mt-2 text-arabic">{result.general_notes_ar}</p>
                     )}
                   </div>
                 )}
-
                 {result.patient_advice && (
-                  <div className="p-3 rounded-lg bg-green-50 border border-green-100">
-                    <p className="text-xs text-green-700">{result.patient_advice}</p>
+                  <div className="p-4 rounded-xl bg-green-50 border border-green-100">
+                    <h4 className="text-xs font-medium text-green-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                      {Icons.check}
+                      Patient Advice
+                    </h4>
+                    <p className="text-sm text-green-700">{result.patient_advice}</p>
                     {result.patient_advice_ar && (
-                      <p className="text-xs text-green-600 mt-1 text-arabic">{result.patient_advice_ar}</p>
+                      <p className="text-sm text-green-600 mt-2 text-arabic">{result.patient_advice_ar}</p>
                     )}
                   </div>
                 )}
               </div>
             )}
           </div>
-        </div>
+        )}
 
         {/* JFDA Panel */}
         {(selectedMedicine || loadingJfda) && (
-          <div className="mt-6 card p-5 animate-fade-in-scale">
+          <div className="mt-8 card p-6 animate-fade-in-scale">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-sm font-medium text-[#171717] flex items-center gap-2">
+              <h2 className="font-semibold text-[#171717] flex items-center gap-2">
                 {Icons.shield}
                 JFDA Information
                 {selectedMedicine && (
@@ -563,16 +580,16 @@ export default function Home() {
             </div>
 
             {loadingJfda && (
-              <div className="text-center py-8">
+              <div className="text-center py-10">
                 <Spinner className="w-6 h-6 mx-auto mb-2" />
                 <p className="text-sm text-[#737373]">Loading JFDA data...</p>
               </div>
             )}
 
             {jfdaInfo && !loadingJfda && (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Trade Name */}
-                <div className="sm:col-span-2 p-4 rounded-lg bg-[#f5f5f5]">
+                <div className="lg:col-span-2 p-4 rounded-lg bg-[#f5f5f5]">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-xs text-[#a3a3a3] uppercase tracking-wide mb-1">Trade Name</p>
@@ -603,33 +620,6 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Pricing */}
-                {(jfdaInfo.public_price_jod || jfdaInfo.pharmacy_price_jod) && (
-                  <div className="sm:col-span-2 p-4 rounded-lg bg-green-50 border border-green-100">
-                    <p className="text-xs text-green-700 uppercase tracking-wide mb-2">Pricing (JOD)</p>
-                    <div className="grid grid-cols-3 gap-4">
-                      {jfdaInfo.public_price_jod && (
-                        <div>
-                          <p className="text-xs text-green-600">Public</p>
-                          <p className="font-medium text-green-700">{jfdaInfo.public_price_jod}</p>
-                        </div>
-                      )}
-                      {jfdaInfo.pharmacy_price_jod && (
-                        <div>
-                          <p className="text-xs text-green-600">Pharmacy</p>
-                          <p className="font-medium text-green-700">{jfdaInfo.pharmacy_price_jod}</p>
-                        </div>
-                      )}
-                      {jfdaInfo.hospital_price_jod && (
-                        <div>
-                          <p className="text-xs text-green-600">Hospital</p>
-                          <p className="font-medium text-green-700">{jfdaInfo.hospital_price_jod}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 {/* Prescription */}
                 <div className="p-4 rounded-lg bg-[#f5f5f5]">
                   <p className="text-xs text-[#a3a3a3] uppercase tracking-wide mb-1">Prescription</p>
@@ -645,9 +635,36 @@ export default function Home() {
                   </p>
                 </div>
 
+                {/* Pricing */}
+                {(jfdaInfo.public_price_jod || jfdaInfo.pharmacy_price_jod) && (
+                  <div className="lg:col-span-2 p-4 rounded-lg bg-green-50 border border-green-100">
+                    <p className="text-xs text-green-700 uppercase tracking-wide mb-2">Pricing (JOD)</p>
+                    <div className="grid grid-cols-3 gap-4">
+                      {jfdaInfo.public_price_jod && (
+                        <div>
+                          <p className="text-xs text-green-600">Public</p>
+                          <p className="font-semibold text-green-700">{jfdaInfo.public_price_jod}</p>
+                        </div>
+                      )}
+                      {jfdaInfo.pharmacy_price_jod && (
+                        <div>
+                          <p className="text-xs text-green-600">Pharmacy</p>
+                          <p className="font-semibold text-green-700">{jfdaInfo.pharmacy_price_jod}</p>
+                        </div>
+                      )}
+                      {jfdaInfo.hospital_price_jod && (
+                        <div>
+                          <p className="text-xs text-green-600">Hospital</p>
+                          <p className="font-semibold text-green-700">{jfdaInfo.hospital_price_jod}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Manufacturer */}
                 {jfdaInfo.manufacturer && (
-                  <div className="sm:col-span-2 p-4 rounded-lg bg-[#f5f5f5]">
+                  <div className="lg:col-span-2 p-4 rounded-lg bg-[#f5f5f5]">
                     <p className="text-xs text-[#a3a3a3] uppercase tracking-wide mb-1">Manufacturer</p>
                     <p className="font-medium text-[#171717]">{jfdaInfo.manufacturer}</p>
                     {jfdaInfo.manufacturer_country && (
@@ -658,7 +675,7 @@ export default function Home() {
 
                 {/* Warnings */}
                 {jfdaInfo.warnings && jfdaInfo.warnings.length > 0 && (
-                  <div className="sm:col-span-2 lg:col-span-3 p-4 rounded-lg bg-amber-50 border border-amber-100">
+                  <div className="sm:col-span-2 lg:col-span-4 p-4 rounded-lg bg-amber-50 border border-amber-100">
                     <p className="text-xs text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1">
                       {Icons.warning}
                       Warnings
@@ -676,7 +693,7 @@ export default function Home() {
 
                 {/* Contraindications */}
                 {jfdaInfo.contraindications && jfdaInfo.contraindications.length > 0 && (
-                  <div className="sm:col-span-2 lg:col-span-3 p-4 rounded-lg bg-red-50 border border-red-100">
+                  <div className="sm:col-span-2 lg:col-span-4 p-4 rounded-lg bg-red-50 border border-red-100">
                     <p className="text-xs text-red-700 uppercase tracking-wide mb-2 flex items-center gap-1">
                       {Icons.warning}
                       Contraindications
@@ -691,7 +708,7 @@ export default function Home() {
 
                 {/* Generic Alternatives */}
                 {jfdaInfo.generic_alternatives && jfdaInfo.generic_alternatives.length > 0 && (
-                  <div className="sm:col-span-2 lg:col-span-3 p-4 rounded-lg bg-[#f5f5f5]">
+                  <div className="sm:col-span-2 lg:col-span-4 p-4 rounded-lg bg-[#f5f5f5]">
                     <p className="text-xs text-[#a3a3a3] uppercase tracking-wide mb-2">Generic Alternatives</p>
                     <div className="flex flex-wrap gap-1.5">
                       {jfdaInfo.generic_alternatives.map((alt, idx) => (
@@ -705,7 +722,7 @@ export default function Home() {
 
                 {/* Additional Notes */}
                 {jfdaInfo.additional_notes && (
-                  <div className="sm:col-span-2 lg:col-span-3 p-4 rounded-lg bg-blue-50 border border-blue-100">
+                  <div className="sm:col-span-2 lg:col-span-4 p-4 rounded-lg bg-blue-50 border border-blue-100">
                     <p className="text-xs text-blue-700 uppercase tracking-wide mb-2 flex items-center gap-1">
                       {Icons.info}
                       Notes
@@ -724,7 +741,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-[#e5e5e5] mt-16 py-6 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#a3a3a3]">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#a3a3a3]">
           <div className="flex items-center gap-2">
             <Image
               src="https://images.squarespace-cdn.com/content/v1/65bf52f873aac538961445c5/19d16cc5-aa83-437c-9c2a-61de5268d5bf/Untitled+design+-+2025-01-19T070746.544.png"
